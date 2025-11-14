@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadProfessorDetails() {
       try {
           // Garanta que este endpoint retorna os detalhes de UM professor e suas matérias
-          const response = await fetch(`http://localhost:8000/api/user/professors/${professorId}`, {
+          const response = await fetch(`${API_BASE_URL}/api/user/professors/${professorId}`, {
                headers: { 'Authorization': `Bearer ${token}` }
           });
 
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         slotsContainer.innerHTML = '<p>Carregando horários...</p>';
         try {
             // Garanta que este endpoint retorna o array de strings ISO
-            const response = await fetch(`http://localhost:8000/api/professor/${professorId}/availabilities`);
+            const response = await fetch(`${API_BASE_URL}/api/professor/${professorId}/availabilities`);
             if (!response.ok) {
                  throw new Error(`Erro ${response.status} ao buscar horários.`);
             }
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Função para fazer a requisição de agendamento
     async function bookAppointment(startTime, subjectId) {
         try {
-            const response = await fetch('http://localhost:8000/api/appointments', {
+            const response = await fetch(`${API_BASE_URL}/api/appointments`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

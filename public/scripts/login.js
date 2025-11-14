@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
             password: document.getElementById('password').value
         };
 
-        fetch('http://localhost:8000/api/login', {
+        fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(loginData)

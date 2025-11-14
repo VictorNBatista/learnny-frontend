@@ -72,16 +72,13 @@ async function loadSubjects() {
   subjectsList.innerHTML = '<div class="loading">Carregando matérias...</div>'
 
   try {
-    const response = await fetch(
-      'http://localhost:8000/api/admin/subjects/listar',
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        }
+    const response = await fetch(`${API_BASE_URL}/api/admin/subjects/listar`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
       }
-    )
+    })
     if (!response.ok) throw new Error('Erro ao carregar matérias')
 
     const data = await response.json()
@@ -153,7 +150,7 @@ async function handleAddSubject(e) {
 
   try {
     const response = await fetch(
-      'http://localhost:8000/api/admin/subjects/cadastrar',
+      `${API_BASE_URL}/api/admin/subjects/cadastrar`,
       {
         method: 'POST',
         credentials: 'include',
@@ -221,7 +218,7 @@ async function handleEditSubject(e) {
 
   try {
     const response = await fetch(
-      `http://localhost:8000/api/admin/subjects/atualizar/${currentSubjectId}`,
+      `${API_BASE_URL}/api/admin/subjects/atualizar/${currentSubjectId}`,
       {
         method: 'PUT',
         headers: {
@@ -281,7 +278,7 @@ async function confirmDelete() {
 
   try {
     const response = await fetch(
-      `http://localhost:8000/api/admin/subjects/deletar/${currentSubjectId}`,
+      `${API_BASE_URL}/api/admin/subjects/deletar/${currentSubjectId}`,
       {
         method: 'DELETE',
         headers: {
@@ -330,7 +327,7 @@ function showMessage(element, message, type) {
 function logout() {
   const adminToken = localStorage.getItem('adminToken')
   if (adminToken) {
-    fetch('http://localhost:8000/api/admin/logout', {
+    fetch(`${API_BASE_URL}/api/admin/logout`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${adminToken}`,

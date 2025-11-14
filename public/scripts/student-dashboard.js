@@ -16,7 +16,7 @@ function checkStudentAuth() {
 
 function verifyStudentToken(token) {
     // Usamos uma rota que retorna o usuário logado para verificar o token e pegar os dados
-    fetch('http://localhost:8000/api/user/listar', {
+    fetch(`${API_BASE_URL}/api/user/listar`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -67,7 +67,7 @@ async function loadAppointments(token, filter = 'all') {
     const listContainer = document.getElementById('appointments-list');
     listContainer.innerHTML = '<p>Carregando seus agendamentos...</p>';
     
-    let apiUrl = 'http://localhost:8000/api/appointments/my';
+    let apiUrl = `${API_BASE_URL}/api/appointments/my`;
 
     // Adiciona o parâmetro de filtro à URL, se não for 'all'
     if (filter !== 'all') {
@@ -143,7 +143,7 @@ async function handleCancelClick(event) {
     let message = `Tem certeza que deseja cancelar o agendamento #${appointmentId}?`;
 
     const token = localStorage.getItem('userToken');
-    const cancelUrl = `http://localhost:8000/api/appointments/${appointmentId}/cancel`;
+    const cancelUrl = `${API_BASE_URL}/api/appointments/${appointmentId}/cancel`;
 
     const didConfirm = await showConfirm(title, message);
     
@@ -186,7 +186,7 @@ function setupLogout() {
 function logout() {
     const userToken = localStorage.getItem('userToken');
     if (userToken) {
-        fetch('http://localhost:8000/api/logout', {
+        fetch(`${API_BASE_URL}/api/logout`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${userToken}` }
         })

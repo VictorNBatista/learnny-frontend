@@ -7,7 +7,7 @@ async function listarProfessores() {
 
     try {
         if (token) {
-            const response = await fetch('http://localhost:8000/api/professor/listar', {
+            const response = await fetch(`${API_BASE_URL}/api/professor/listar`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,

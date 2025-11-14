@@ -1,25 +1,28 @@
 async function cadastrarUsuario(event) {
   event.preventDefault()
 
-    // Obtém os valores dos campos do formulário
-    const name = document.getElementById('name').value;
-    const username = document.getElementById('username').value;
-    const email = document.getElementById('email').value;
-    const contact = document.getElementById('contact').value;
-    const photo_url = document.getElementById('photo_url').value;
-    const password = document.getElementById('password').value;
-    const password_confirmation = document.getElementById('password_confirmation').value;
+  // Obtém os valores dos campos do formulário
+  const name = document.getElementById('name').value
+  const username = document.getElementById('username').value
+  const email = document.getElementById('email').value
+  const contact = document.getElementById('contact').value
+  const photo_url = document.getElementById('photo_url').value
+  const password = document.getElementById('password').value
+  const password_confirmation = document.getElementById(
+    'password_confirmation'
+  ).value
 
-    // Validação da senha
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-      showModal(
-        'Senha Inválida',
-        'A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um símbolo.',
-        'error'
-      )
-      return
-    }   
+  // Validação da senha
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+  if (!passwordRegex.test(password)) {
+    showModal(
+      'Senha Inválida',
+      'A senha deve ter pelo menos 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um símbolo.',
+      'error'
+    )
+    return
+  }
 
   // --- Validação 2 (Confirmação) ---
   if (password !== password_confirmation) {
@@ -44,7 +47,7 @@ async function cadastrarUsuario(event) {
 
   try {
     // Faz a requisição POST para o servidor
-    const resposta = await fetch('http://localhost:8000/api/cadastrar', {
+    const resposta = await fetch(`${API_BASE_URL}/api/cadastrar`, {
       method: 'POST',
       credentials: 'include',
       headers: {
