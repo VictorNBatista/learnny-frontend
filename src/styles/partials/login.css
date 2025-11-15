@@ -37,6 +37,10 @@ h1{
   font-weight: bold;
 }
 
+.page-header .top-bar-container #learnny-logo{
+  width: 100%;
+}
+
 .password-wrapper {
     position: relative;
     display: flex;
