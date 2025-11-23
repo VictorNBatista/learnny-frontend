@@ -1,7 +1,19 @@
+/**
+ * MÓDULO: Registro de Aluno
+ * ================================================
+ * Gerencia o processo de registro/cadastro de novos alunos na plataforma.
+ * Valida dados, aplica regras de senha e cria conta na API.
+ */
+
+/**
+ * Realiza o cadastro de um novo usuário (aluno) na plataforma
+ * @param {Event} event - Evento do formulário de registro
+ * @returns {void}
+ */
 async function cadastrarUsuario(event) {
   event.preventDefault()
 
-  // Obtém os valores dos campos do formulário
+  // Coleta os dados do formulário de registro
   const name = document.getElementById('name').value
   const username = document.getElementById('username').value
   const email = document.getElementById('email').value
@@ -12,7 +24,8 @@ async function cadastrarUsuario(event) {
     'password_confirmation'
   ).value
 
-  // Validação da senha
+  // Validação de força da senha
+  // Requisitos: mínimo 8 caracteres, letras maiúsculas, minúsculas, números e símbolos especiais
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
   if (!passwordRegex.test(password)) {
@@ -24,7 +37,7 @@ async function cadastrarUsuario(event) {
     return
   }
 
-  // --- Validação 2 (Confirmação) ---
+  // Validação de confirmação de senha
   if (password !== password_confirmation) {
     showModal(
       'Senhas Não Coincidem',
@@ -34,7 +47,7 @@ async function cadastrarUsuario(event) {
     return
   }
 
-  // Dados do usuário para o cadastro
+  // Prepara o objeto com dados do usuário para envio à API
   const dados = {
     name,
     username,
@@ -46,7 +59,7 @@ async function cadastrarUsuario(event) {
   }
 
   try {
-    // Faz a requisição POST para o servidor
+    // Envia requisição POST para registrar o usuário
     const resposta = await fetch(`${API_BASE_URL}/api/cadastrar`, {
       method: 'POST',
       credentials: 'include',
@@ -57,33 +70,36 @@ async function cadastrarUsuario(event) {
       body: JSON.stringify(dados)
     })
 
-    // Processa a resposta da API
+    // Processa resposta da API
     const respostaJson = await resposta.json()
 
     if (resposta.ok) {
-      // --- SUCESSO ---
+      // Sucesso no registro
       showModal(
         'Cadastro Realizado!',
         `Usuário ${dados.name} cadastrado com sucesso! Você já pode fazer o login.`,
         'success'
       )
       document.getElementById('registerForm').reset()
+
+      // Aguarda 5 segundos antes de redirecionar para login
       setTimeout(() => {
         window.location.href = 'login-student.html'
       }, 5000)
     } else {
-      // --- ERRO DA API (Ex: Validação) ---
+      // Erro na resposta da API (validação, conflito, etc)
       let errorMessage = respostaJson.message || 'Falha ao cadastrar usuário'
 
+      // Trata erros de validação específicos do Laravel
       if (respostaJson.errors) {
-        const firstErrorKey = Object.keys(respostaJson.errors)[0] // Pega a chave do primeiro erro (ex: 'email')
-        errorMessage = respostaJson.errors[firstErrorKey][0] // Pega a primeira mensagem de erro
+        const firstErrorKey = Object.keys(respostaJson.errors)[0]
+        errorMessage = respostaJson.errors[firstErrorKey][0]
       }
 
       showModal('Erro no Cadastro', errorMessage, 'error')
     }
   } catch (erro) {
-    // --- ERRO DE CONEXÃO ---
+    // Erro de conexão ou rede
     showModal(
       'Erro de Conexão',
       'Não foi possível conectar ao servidor. Verifique sua rede e tente novamente.',
@@ -93,6 +109,7 @@ async function cadastrarUsuario(event) {
   }
 }
 
+// Associa função ao formulário de registro
 document
   .getElementById('registerForm')
   .addEventListener('submit', cadastrarUsuario)

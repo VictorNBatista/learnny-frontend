@@ -1,88 +1,95 @@
-const modal = document.getElementById('global-modal');
-const modalTitle = document.getElementById('modal-title');
-const modalMessage = document.getElementById('modal-message');
-const modalBtnConfirm = document.getElementById('modal-btn-confirm');
-const modalBtnCancel = document.getElementById('modal-btn-cancel');
-const modalContent = modal.querySelector('.modal-content');
+/**
+ * MÓDULO: Modal Global
+ * ================================================
+ * Gerencia o sistema de modais da aplicação.
+ * Fornece funções para exibir alertas e solicitar confirmações do usuário.
+ */
 
-// Variável para guardar a "promessa" da confirmação
-let resolveConfirm;
+// Referências aos elementos do modal global
+const modal = document.getElementById('global-modal')
+const modalTitle = document.getElementById('modal-title')
+const modalMessage = document.getElementById('modal-message')
+const modalBtnConfirm = document.getElementById('modal-btn-confirm')
+const modalBtnCancel = document.getElementById('modal-btn-cancel')
+const modalContent = modal.querySelector('.modal-content')
+
+// Armazena função resolve da Promise de confirmação
+let resolveConfirm
 
 /**
- * Exibe um modal de alerta simples (com um só botão "OK").
- * @param {string} title - O título do modal.
- * @param {string} message - A mensagem a ser exibida.
- * @param {string} type - 'info' (default), 'success', ou 'error' para estilização.
+ * Exibe um modal de alerta simples com um único botão "OK"
+ * @param {string} title - Título do modal
+ * @param {string} message - Mensagem de conteúdo
+ * @param {string} type - Tipo de alerta: 'info' (padrão), 'success' ou 'error'
  */
 function showModal(title, message, type = 'info') {
-    modalTitle.textContent = title;
-    modalMessage.textContent = message;
+  modalTitle.textContent = title
+  modalMessage.textContent = message
 
-    // Remove classes de tipo antigas e adiciona a nova
-    modalContent.classList.remove('modal-success', 'modal-error');
-    if (type === 'success') {
-        modalContent.classList.add('modal-success');
-    } else if (type === 'error') {
-        modalContent.classList.add('modal-error');
-    }
+  // Remove classes de estilo anteriores e aplica nova
+  modalContent.classList.remove('modal-success', 'modal-error')
+  if (type === 'success') {
+    modalContent.classList.add('modal-success')
+  } else if (type === 'error') {
+    modalContent.classList.add('modal-error')
+  }
 
-    // Configura botões: só o "OK" aparece
-    modalBtnConfirm.textContent = 'OK';
-    modalBtnConfirm.style.display = 'block';
-    modalBtnCancel.style.display = 'none'; // Esconde o "Cancelar"
+  // Configura botões: exibe apenas "OK"
+  modalBtnConfirm.textContent = 'OK'
+  modalBtnConfirm.style.display = 'block'
+  modalBtnCancel.style.display = 'none'
 
-    modal.classList.remove('hidden');
+  modal.classList.remove('hidden')
 
-    // Quando o "OK" for clicado, apenas fecha o modal
-    modalBtnConfirm.onclick = () => {
-        modal.classList.add('hidden');
-    };
-    // Limpa qualquer clique anterior
-    modalBtnCancel.onclick = null;
+  // Fecha modal ao clicar em "OK"
+  modalBtnConfirm.onclick = () => {
+    modal.classList.add('hidden')
+  }
+  modalBtnCancel.onclick = null
 }
 
 /**
- * Exibe um modal de confirmação (com "Confirmar" e "Cancelar").
- * Retorna uma Promessa que resolve para 'true' (Confirmar) ou 'false' (Cancelar).
- * @param {string} title - O título da confirmação.
- * @param {string} message - A pergunta de confirmação.
- * @returns {Promise<boolean>}
+ * Exibe um modal de confirmação com botões "Confirmar" e "Cancelar"
+ * Retorna uma Promise que resolve com true (confirmado) ou false (cancelado)
+ * @param {string} title - Título da pergunta de confirmação
+ * @param {string} message - Mensagem de confirmação
+ * @returns {Promise<boolean>} - Resolve quando usuário clicar em um botão
  */
 function showConfirm(title, message) {
-    modalTitle.textContent = title;
-    modalMessage.textContent = message;
+  modalTitle.textContent = title
+  modalMessage.textContent = message
 
-    // Garante que não há classes de estilo (sucesso/erro)
-    modalContent.classList.remove('modal-success', 'modal-error');
+  // Remove classes de tipo anterior
+  modalContent.classList.remove('modal-success', 'modal-error')
 
-    // Configura botões: "Confirmar" e "Cancelar" aparecem
-    modalBtnConfirm.textContent = 'Confirmar';
-    modalBtnConfirm.style.display = 'block';
-    modalBtnCancel.style.display = 'block';
+  // Configura botões: exibe "Confirmar" e "Cancelar"
+  modalBtnConfirm.textContent = 'Confirmar'
+  modalBtnConfirm.style.display = 'block'
+  modalBtnCancel.style.display = 'block'
 
-    modal.classList.remove('hidden');
+  modal.classList.remove('hidden')
 
-    // Retorna uma promessa que espera a decisão do usuário
-    return new Promise((resolve) => {
-        resolveConfirm = resolve; // Salva a função 'resolve' globalmente
-    });
+  // Retorna Promise que aguarda decisão do usuário
+  return new Promise(resolve => {
+    resolveConfirm = resolve
+  })
 }
 
-// Adiciona os cliques principais aos botões
+// Configura listeners dos botões do modal
 if (modal) {
-    modalBtnConfirm.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        if (resolveConfirm) {
-            resolveConfirm(true); // Resolve a promessa com 'true'
-            resolveConfirm = null; // Limpa a promessa
-        }
-    });
+  modalBtnConfirm.addEventListener('click', () => {
+    modal.classList.add('hidden')
+    if (resolveConfirm) {
+      resolveConfirm(true) // Confirmado
+      resolveConfirm = null
+    }
+  })
 
-    modalBtnCancel.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        if (resolveConfirm) {
-            resolveConfirm(false); // Resolve a promessa com 'false'
-            resolveConfirm = null; // Limpa a promessa
-        }
-    });
+  modalBtnCancel.addEventListener('click', () => {
+    modal.classList.add('hidden')
+    if (resolveConfirm) {
+      resolveConfirm(false) // Cancelado
+      resolveConfirm = null
+    }
+  })
 }

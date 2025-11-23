@@ -1,21 +1,27 @@
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("togglePassword.js carregado");
-    const togglePassword = document.querySelectorAll('.toggle-password');
-    console.log(togglePassword); // Verifique se está encontrando os elementos
+/**
+ * MÓDULO: Alternância de Visibilidade de Senha
+ * ================================================
+ * Permite alternar visibilidade entre senha cifrada e texto aberto.
+ * Atualiza ícone conforme o estado do campo.
+ */
 
-    togglePassword.forEach(el => {
-        el.addEventListener('click', function() {
-            const input = this.previousElementSibling;
-            const icon = this.querySelector('img');
-            console.log(input); // Verifique se o input está sendo encontrado corretamente
+document.addEventListener('DOMContentLoaded', function () {
+  const togglePassword = document.querySelectorAll('.toggle-password')
 
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.src = 'public/images/icons/eye-off.svg'; 
-            } else {
-                input.type = 'password';
-                icon.src = 'public/images/icons/eye.svg'; 
-            }
-        });
-    });
-});
+  togglePassword.forEach(el => {
+    el.addEventListener('click', function () {
+      // Busca input anterior ao botão de toggle
+      const input = this.previousElementSibling
+      const icon = this.querySelector('img')
+
+      // Alterna entre modo senha e texto
+      if (input.type === 'password') {
+        input.type = 'text'
+        icon.src = 'public/images/icons/eye-off.svg'
+      } else {
+        input.type = 'password'
+        icon.src = 'public/images/icons/eye.svg'
+      }
+    })
+  })
+})

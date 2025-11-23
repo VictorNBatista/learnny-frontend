@@ -1,7 +1,15 @@
+/**
+ * MÓDULO: Edição de Disponibilidade
+ * ================================================
+ * Gerencia a configuração de horários disponíveis do professor.
+ * Permite selecionar dias da semana e horários de aula.
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
   initAvailabilityPage()
 })
 
+// Nomes dos dias da semana em português
 const weekDays = [
   'Domingo',
   'Segunda-feira',
@@ -12,6 +20,10 @@ const weekDays = [
   'Sábado'
 ]
 
+/**
+ * Inicializa a página de disponibilidade
+ * Verifica autenticação, cria formulário e carrega dados
+ */
 async function initAvailabilityPage() {
   const token = localStorage.getItem('professorToken')
   if (!token) {
@@ -23,8 +35,8 @@ async function initAvailabilityPage() {
   const scheduleContainer = document.getElementById('availability-schedule')
   const form = document.getElementById('availability-form')
 
-  // 1. Cria a estrutura HTML para os 7 dias
-  scheduleContainer.innerHTML = '' // Limpa o "Carregando..."
+  // Cria estrutura HTML para os 7 dias da semana
+  scheduleContainer.innerHTML = ''
   weekDays.forEach((dayName, index) => {
     const item = document.createElement('div')
     item.className = 'availability-item'
@@ -39,7 +51,7 @@ async function initAvailabilityPage() {
     scheduleContainer.appendChild(item)
   })
 
-  // 2. Busca a disponibilidade atual e preenche o formulário
+  // Busca disponibilidade atual e preenche o formulário
   try {
     const currentAvailability = await fetchAvailability(token)
     populateForm(currentAvailability)
@@ -47,11 +59,15 @@ async function initAvailabilityPage() {
     showModal('Erro ao Carregar', error.message, 'error')
   }
 
-  // 3. Adiciona listeners para habilitar/desabilitar inputs e salvar
+  // Configura listeners para interações do usuário
   setupEventListeners(token)
 }
 
-// Busca a disponibilidade atual do professor
+/**
+ * Busca disponibilidade atual do professor
+ * @param {string} token - Token JWT de autenticação
+ * @returns {Promise<Array>} - Array de disponibilidades
+ */
 async function fetchAvailability(token) {
   try {
     const response = await fetch(
@@ -70,25 +86,29 @@ async function fetchAvailability(token) {
       throw new Error('Não foi possível buscar sua disponibilidade.')
     }
     const data = await response.json()
-    // Garante que a resposta seja um array
+    // Garante que retorna um array
     return Array.isArray(data) ? data : data.data || []
   } catch (error) {
     console.error('Erro em fetchAvailability:', error)
-    // Se der 401, redireciona
+    // Redireciona se sessão expirada
     if (error.message.includes('Sessão expirada')) {
       setTimeout(() => (window.location.href = 'login-professor.html'), 2000)
     }
-    throw error // Propaga o erro para ser pego no init
+    throw error
   }
 }
 
-// Preenche o formulário com os dados carregados
+/**
+ * Preenche o formulário com dados de disponibilidade
+ * @param {Array} availabilityData - Array com dados de disponibilidade
+ */
 function populateForm(availabilityData) {
   if (!Array.isArray(availabilityData)) {
     console.error('Erro: Os dados recebidos não são um array!')
     return
   }
 
+  // Popula cada dia com seus horários
   availabilityData.forEach(item => {
     const dayIndex = item.day_of_week
 
@@ -98,10 +118,11 @@ function populateForm(availabilityData) {
 
     if (checkbox && startTimeInput && endTimeInput) {
       checkbox.checked = true
+      // Extrai apenas HH:MM do formato completo
       startTimeInput.value = item.start_time
         ? item.start_time.substring(0, 5)
-        : '' // Pega só HH:MM, com segurança
-      endTimeInput.value = item.end_time ? item.end_time.substring(0, 5) : '' // Pega só HH:MM, com segurança
+        : ''
+      endTimeInput.value = item.end_time ? item.end_time.substring(0, 5) : ''
       startTimeInput.disabled = false
       endTimeInput.disabled = false
     } else {
@@ -110,12 +131,16 @@ function populateForm(availabilityData) {
   })
 }
 
-// Configura os listeners de eventos
+/**
+ * Configura listeners para interações de formulário
+ * Habilita/desabilita campos baseado em checkboxes
+ * @param {string} token - Token JWT para requisições
+ */
 function setupEventListeners(token) {
   const scheduleContainer = document.getElementById('availability-schedule')
   const form = document.getElementById('availability-form')
 
-  // Listener para checkboxes (habilita/desabilita inputs de hora)
+  // Habilita/desabilita campos de hora conforme checkbox é marcado
   scheduleContainer.addEventListener('change', event => {
     if (event.target.type === 'checkbox') {
       const dayIndex = event.target.dataset.day
@@ -126,7 +151,7 @@ function setupEventListeners(token) {
       startTimeInput.disabled = !isChecked
       endTimeInput.disabled = !isChecked
 
-      // Limpa os valores se o dia for desmarcado
+      // Limpa valores se dia é desmarcado
       if (!isChecked) {
         startTimeInput.value = ''
         endTimeInput.value = ''
@@ -134,24 +159,24 @@ function setupEventListeners(token) {
     }
   })
 
-  // Listener para o submit do formulário
+  // Processa submissão do formulário
   form.addEventListener('submit', async event => {
     event.preventDefault()
     const saveButton = form.querySelector('button[type="submit"]')
-    saveButton.disabled = true // Desabilita o botão enquanto salva
+    saveButton.disabled = true
     saveButton.textContent = 'Salvando...'
 
     const payload = []
     let validationError = false
 
-    // Coleta os dados dos dias marcados
+    // Coleta dados de dias marcados
     for (let i = 0; i < 7; i++) {
       const checkbox = document.getElementById(`day-${i}-active`)
       if (checkbox.checked) {
         const startTime = document.getElementById(`day-${i}-start`).value
         const endTime = document.getElementById(`day-${i}-end`).value
 
-        // Validação simples
+        // Valida se horários estão preenchidos
         if (!startTime || !endTime) {
           showModal(
             'Erro de Validação',
@@ -161,6 +186,8 @@ function setupEventListeners(token) {
           validationError = true
           break
         }
+
+        // Valida se início é anterior ao fim
         if (startTime >= endTime) {
           showModal(
             'Erro de Validação',
@@ -182,10 +209,10 @@ function setupEventListeners(token) {
     if (validationError) {
       saveButton.disabled = false
       saveButton.textContent = 'Salvar alterações'
-      return // Interrompe se houver erro de validação
+      return
     }
 
-    // Envia os dados para a API
+    // Envia disponibilidades para API
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/professor/availabilities`,
@@ -196,7 +223,7 @@ function setupEventListeners(token) {
             'Content-Type': 'application/json',
             Accept: 'application/json'
           },
-          body: JSON.stringify({ availabilities: payload }) // Envia no formato esperado pela API
+          body: JSON.stringify({ availabilities: payload })
         }
       )
 
@@ -213,7 +240,7 @@ function setupEventListeners(token) {
     } catch (error) {
       showModal('Erro ao Salvar', error.message, 'error')
     } finally {
-      // Reabilita o botão após a tentativa
+      // Reabilita botão após operação
       saveButton.disabled = false
       saveButton.textContent = 'Salvar alterações'
     }

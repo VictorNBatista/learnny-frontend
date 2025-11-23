@@ -1,5 +1,9 @@
-// admin-subjects.js
-// Script para gerenciamento de matérias integrado ao backend
+/**
+ * MÓDULO: Gerenciamento de Matérias (Admin)
+ * ================================================
+ * Gerencia CRUD de matérias (criar, ler, atualizar, deletar).
+ * Permite que administrador gerencie catálogo de matérias da plataforma.
+ */
 
 let currentSubjectId = null
 let subjects = []
@@ -11,7 +15,10 @@ document.addEventListener('DOMContentLoaded', function () {
   loadSubjects()
 })
 
-// Verifica se o admin está logado
+/**
+ * Verifica autenticação do administrador
+ * Redireciona para login se não houver token
+ */
 function checkAdminAuth() {
   const adminToken = localStorage.getItem('adminToken')
   if (!adminToken) {
@@ -19,7 +26,9 @@ function checkAdminAuth() {
   }
 }
 
-// Configura os eventos da página
+/**
+ * Configura listeners para formulários, busca e logout
+ */
 function setupEventListeners() {
   const addForm = document.getElementById('addSubjectForm')
   if (addForm) addForm.addEventListener('submit', handleAddSubject)
@@ -36,7 +45,9 @@ function setupEventListeners() {
   if (logoutBtn) logoutBtn.addEventListener('click', logout)
 }
 
-// Configura modais
+/**
+ * Configura listeners para abrir/fechar modais
+ */
 function setupModals() {
   const modals = document.querySelectorAll('.modal')
   const closeButtons = document.querySelectorAll('.close')
@@ -55,6 +66,10 @@ function setupModals() {
   })
 }
 
+/**
+ * Fecha modal limpando mensagens
+ * @param {HTMLElement} modal - Elemento modal a fechar
+ */
 function closeModal(modal) {
   modal.style.display = 'none'
   const messages = modal.querySelectorAll('.message')
@@ -64,7 +79,10 @@ function closeModal(modal) {
   })
 }
 
-// Listar matérias
+/**
+ * Carrega lista de matérias da API
+ * Busca todas as matérias cadastradas no sistema
+ */
 async function loadSubjects() {
   const adminToken = localStorage.getItem('adminToken')
   const subjectsList = document.getElementById('subjectsList')
@@ -72,6 +90,7 @@ async function loadSubjects() {
   subjectsList.innerHTML = '<div class="loading">Carregando matérias...</div>'
 
   try {
+    // Busca lista de matérias da API
     const response = await fetch(`${API_BASE_URL}/api/admin/subjects/listar`, {
       method: 'GET',
       headers: {
@@ -95,7 +114,10 @@ async function loadSubjects() {
   }
 }
 
-// Renderiza a lista de matérias
+/**
+ * Renderiza lista de matérias no DOM
+ * @param {Array} subjectsToRender - Array de matérias a renderizar
+ */
 function renderSubjects(subjectsToRender) {
   const subjectsList = document.getElementById('subjectsList')
 
@@ -108,6 +130,7 @@ function renderSubjects(subjectsToRender) {
     return
   }
 
+  // Renderiza cada matéria como item com botões de editar/deletar
   subjectsList.innerHTML = subjectsToRender
     .map(
       subject => `
@@ -127,7 +150,10 @@ function renderSubjects(subjectsToRender) {
     .join('')
 }
 
-// Busca de matérias
+/**
+ * Filtra matérias por termo de busca
+ * @param {Event} e - Evento de input
+ */
 function handleSearch(e) {
   const searchTerm = e.target.value.toLowerCase()
   const filteredSubjects = subjects.filter(subject =>
@@ -136,7 +162,10 @@ function handleSearch(e) {
   renderSubjects(filteredSubjects)
 }
 
-// Adicionar matéria
+/**
+ * Processa adição de nova matéria
+ * @param {Event} e - Evento de submit
+ */
 async function handleAddSubject(e) {
   e.preventDefault()
   const adminToken = localStorage.getItem('adminToken')
@@ -147,6 +176,237 @@ async function handleAddSubject(e) {
     showMessage(messageDiv, 'Por favor, digite o nome da matéria.', 'error')
     return
   }
+
+  try {
+    // Envia novo nome de matéria para API
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/subjects/cadastrar`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ name: subjectName })
+      }
+    )
+
+    const data = await response.json()
+
+    if (response.ok) {
+      showMessage(messageDiv, 'Matéria adicionada com sucesso!', 'success')
+      e.target.reset()
+      loadSubjects()
+    } else {
+      showMessage(
+        messageDiv,
+        data.message || 'Erro ao adicionar matéria.',
+        'error'
+      )
+    }
+  } catch (error) {
+    console.error('Erro ao adicionar matéria:', error)
+    showMessage(
+      messageDiv,
+      'Erro ao adicionar matéria. Tente novamente.',
+      'error'
+    )
+  }
+}
+
+/**
+ * Abre modal de edição de matéria
+ * @param {number} subjectId - ID da matéria
+ * @param {string} subjectName - Nome da matéria
+ */
+function openEditModal(subjectId, subjectName) {
+  currentSubjectId = subjectId
+  document.getElementById('editSubjectId').value = subjectId
+  document.getElementById('editSubjectName').value = subjectName
+  document.getElementById('editModal').style.display = 'block'
+}
+
+/**
+ * Fecha modal de edição
+ */
+function closeEditModal() {
+  closeModal(document.getElementById('editModal'))
+  currentSubjectId = null
+}
+
+/**
+ * Processa edição de matéria
+ * @param {Event} e - Evento de submit
+ */
+async function handleEditSubject(e) {
+  e.preventDefault()
+  const adminToken = localStorage.getItem('adminToken')
+  const subjectName = e.target.name.value.trim()
+  const messageDiv = document.getElementById('edit-message')
+
+  if (!subjectName) {
+    showMessage(messageDiv, 'Por favor, digite o nome da matéria.', 'error')
+    return
+  }
+
+  if (!currentSubjectId) {
+    showMessage(messageDiv, 'Erro: ID da matéria não encontrado.', 'error')
+    return
+  }
+
+  try {
+    // Envia alteração para API
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/subjects/atualizar/${currentSubjectId}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: subjectName })
+      }
+    )
+
+    const data = await response.json()
+
+    if (response.ok) {
+      showMessage(messageDiv, 'Matéria atualizada com sucesso!', 'success')
+      setTimeout(() => {
+        closeEditModal()
+        loadSubjects()
+      }, 1500)
+    } else {
+      showMessage(
+        messageDiv,
+        data.message || 'Erro ao atualizar matéria.',
+        'error'
+      )
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar matéria:', error)
+    showMessage(
+      messageDiv,
+      'Erro ao atualizar matéria. Tente novamente.',
+      'error'
+    )
+  }
+}
+
+/**
+ * Abre modal de confirmação de exclusão
+ * @param {number} subjectId - ID da matéria
+ * @param {string} subjectName - Nome da matéria
+ */
+function openDeleteModal(subjectId, subjectName) {
+  currentSubjectId = subjectId
+  document.getElementById('deleteSubjectName').textContent = subjectName
+  document.getElementById('deleteModal').style.display = 'block'
+}
+
+/**
+ * Fecha modal de exclusão
+ */
+function closeDeleteModal() {
+  closeModal(document.getElementById('deleteModal'))
+  currentSubjectId = null
+}
+
+/**
+ * Confirma e processa exclusão de matéria
+ */
+async function confirmDelete() {
+  const adminToken = localStorage.getItem('adminToken')
+  const messageDiv = document.getElementById('delete-message')
+
+  if (!currentSubjectId) {
+    showMessage(messageDiv, 'Erro: ID da matéria não encontrado.', 'error')
+    return
+  }
+
+  try {
+    // Envia solicitação de exclusão para API
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/subjects/deletar/${currentSubjectId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    const data = await response.json()
+
+    if (response.ok) {
+      showMessage(messageDiv, 'Matéria excluída com sucesso!', 'success')
+      setTimeout(() => {
+        closeDeleteModal()
+        loadSubjects()
+      }, 1500)
+    } else {
+      showMessage(
+        messageDiv,
+        data.message || 'Erro ao excluir matéria.',
+        'error'
+      )
+    }
+  } catch (error) {
+    console.error('Erro ao excluir matéria:', error)
+    showMessage(
+      messageDiv,
+      'Erro ao excluir matéria. Tente novamente.',
+      'error'
+    )
+  }
+}
+
+/**
+ * Exibe mensagem de feedback
+ * @param {HTMLElement} element - Elemento para exibir mensagem
+ * @param {string} message - Texto da mensagem
+ * @param {string} type - Tipo de mensagem ('success' ou 'error')
+ */
+function showMessage(element, message, type) {
+  element.textContent = message
+  element.className = `message ${type}`
+  element.style.display = 'block'
+  if (type === 'success') {
+    setTimeout(() => (element.style.display = 'none'), 3000)
+  }
+}
+
+/**
+ * Processa logout do administrador
+ * Notifica API e limpa sessão
+ */
+function logout() {
+  const adminToken = localStorage.getItem('adminToken')
+  if (adminToken) {
+    fetch(`${API_BASE_URL}/api/admin/logout`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
+      }
+    }).finally(() => {
+      localStorage.removeItem('adminToken')
+      window.location.href = 'index.html'
+    })
+  } else {
+    window.location.href = 'index.html'
+  }
+}
+
+// Exporta funções para o contexto global (usadas em onclick do HTML)
+window.openEditModal = openEditModal
+window.closeEditModal = closeEditModal
+window.openDeleteModal = openDeleteModal
+window.closeDeleteModal = closeDeleteModal
+window.confirmDelete = confirmDelete
 
   try {
     const response = await fetch(

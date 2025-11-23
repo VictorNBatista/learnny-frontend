@@ -1,14 +1,23 @@
+/**
+ * MÓDULO: Login de Aluno
+ * ================================================
+ * Gerencia o processo de autenticação para alunos na plataforma.
+ * Valida credenciais, armazena tokens e redireciona ao dashboard.
+ */
+
 document.addEventListener('DOMContentLoaded', function () {
   const form = document.getElementById('loginForm')
 
   form.addEventListener('submit', function (e) {
     e.preventDefault()
 
+    // Coleta os dados do formulário
     const loginData = {
       email: document.getElementById('email').value,
       password: document.getElementById('password').value
     }
 
+    // Envia requisição de autenticação para a API
     fetch(`${API_BASE_URL}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -17,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(response => response.json())
       .then(data => {
         if (data.status === 200) {
-          // Armazenar o token e o ID
+          // Armazenamento de credenciais no navegador
           localStorage.setItem('userToken', data.usuario.token)
           localStorage.setItem('userId', data.usuario.id)
 
@@ -27,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'success'
           )
 
-          // Espera 2 segundos para o usuário ler a mensagem e redireciona
+          // Aguarda 2 segundos para o usuário visualizar a mensagem de sucesso
           setTimeout(() => {
             window.location.href = 'dashboard-student.html'
           }, 2000)

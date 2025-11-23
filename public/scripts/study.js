@@ -1,12 +1,24 @@
-let professoresOriginais = [] // Lista original de professores
+/**
+ * MÓDULO: Listagem de Professores
+ * ================================================
+ * Gerencia a exibição e filtro de professores disponíveis.
+ * Carrega lista da API, exibe cards com informações e permite busca por matéria.
+ */
 
-// Função para listar todos os professores
+// Armazena lista original de professores carregada da API
+let professoresOriginais = []
+
+/**
+ * Busca lista de todos os professores disponíveis da API
+ * Valida token de autenticação do aluno
+ */
 async function listarProfessores() {
   const token = localStorage.getItem('userToken')
   console.log('Token:', token)
 
   try {
     if (token) {
+      // Busca lista de professores da API
       const response = await fetch(`${API_BASE_URL}/api/professor/listar`, {
         method: 'GET',
         headers: {
@@ -19,6 +31,7 @@ async function listarProfessores() {
         const data = await response.json()
         console.log('Dados recebidos:', data)
 
+        // Armazena lista original para filtros
         professoresOriginais = data.data
         exibirProfessores(professoresOriginais)
       } else {
@@ -30,6 +43,7 @@ async function listarProfessores() {
         )
       }
     } else {
+      // Redireciona para login se não houver token
       window.location.href = 'login-student.html'
     }
   } catch (error) {
@@ -38,17 +52,23 @@ async function listarProfessores() {
   }
 }
 
-// Função para exibir os professores no HTML
+/**
+ * Renderiza cards de professores no DOM
+ * Cada card exibe: foto, nome, matérias, biografia, preço e botão de agendamento
+ * @param {Array} professores - Array de objetos professor com dados a exibir
+ */
 function exibirProfessores(professores) {
   const teacherContainer = document.querySelector('main')
-  teacherContainer.innerHTML = '' // Limpa o contêiner
+  teacherContainer.innerHTML = ''
 
   professores.forEach(professor => {
+    // Concatena nomes de todas as matérias do professor
     const materias = professor.subjects.map(s => s.name).join(', ')
 
     const professorCard = document.createElement('article')
     professorCard.classList.add('teacher-item')
 
+    // Formata preço com 2 casas decimais
     professorCard.innerHTML = `
             <header>
                 <img src="${
@@ -76,18 +96,25 @@ function exibirProfessores(professores) {
   })
 }
 
-// Filtro por matéria no formulário
+/**
+ * Normaliza texto removendo acentos e deixando minúsculo
+ * Facilita busca/filtro insensível a acentos
+ * @param {string} texto - Texto a normalizar
+ * @returns {string} - Texto normalizado
+ */
+function normalizarTexto(texto) {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+// Configura listeners de busca no formulário
 const formBusca = document.getElementById('search-teachers')
 const inputBusca = document.getElementById('searchSubject')
 
-function normalizarTexto(texto) {
-  return texto
-    .normalize('NFD') // Decompõe acentos
-    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-    .toLowerCase() // Deixa tudo minúsculo
-}
-
 if (formBusca) {
+  // Ao submeter formulário, filtra professores por matéria
   formBusca.addEventListener('submit', event => {
     event.preventDefault()
     const termo = normalizarTexto(inputBusca.value.trim())
@@ -97,6 +124,7 @@ if (formBusca) {
       return
     }
 
+    // Filtra professores que têm matéria com nome contendo o termo
     const professoresFiltrados = professoresOriginais.filter(professor =>
       professor.subjects.some(s => normalizarTexto(s.name).includes(termo))
     )
@@ -104,7 +132,7 @@ if (formBusca) {
     exibirProfessores(professoresFiltrados)
   })
 
-  // Resetar a lista quando o campo for limpo
+  // Reseta lista quando campo de busca é esvaziado
   inputBusca.addEventListener('input', event => {
     if (event.target.value.trim() === '') {
       exibirProfessores(professoresOriginais)
@@ -112,5 +140,5 @@ if (formBusca) {
   })
 }
 
-// Executa a listagem ao carregar a página
+// Carrega lista de professores ao iniciar página
 document.addEventListener('DOMContentLoaded', listarProfessores)

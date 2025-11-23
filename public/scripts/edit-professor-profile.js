@@ -1,29 +1,40 @@
+/**
+ * MÓDULO: Edição de Perfil de Professor
+ * ================================================
+ * Gerencia a edição de informações pessoais e profissionais do professor.
+ * Permite atualizar nome, contato, foto, biografia, preço e matérias.
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
   initProfessorProfilePage()
 })
 
+
+/**
+ * Inicializa página de edição de perfil do professor
+ * Valida autenticação, carrega dados e configura formulário
+ */
 async function initProfessorProfilePage() {
   const token = localStorage.getItem('professorToken')
   const professorId = localStorage.getItem('professorId')
 
   if (!token || !professorId) {
-    // Usa modal para mensagem de redirecionamento
     showModal(
       'Sessão Inválida',
       'Você precisa estar logado como professor para acessar esta página. Redirecionando...',
       'error'
     )
-    setTimeout(() => redirectProfessorToLogin(), 2500) // Redireciona após mensagem do modal
+    setTimeout(() => redirectProfessorToLogin(), 2500)
     return
   }
 
   const form = document.getElementById('professor-profile-form')
-  // Não precisamos mais do feedbackEl
 
   let initialData = null
   let availableSubjects = []
 
   try {
+    // Carrega dados em paralelo: matérias disponíveis e perfil do professor
     const [subjects, profile] = await Promise.all([
       fetchSubjects(),
       fetchProfessorProfile(token)
@@ -35,7 +46,6 @@ async function initProfessorProfilePage() {
     populateProfessorForm(initialData, availableSubjects)
   } catch (error) {
     console.error('Erro ao carregar dados do professor:', error)
-    // Usa modal para erros de carregamento
     showModal(
       'Erro ao Carregar',
       error.message || 'Não foi possível carregar suas informações.',
@@ -44,12 +54,13 @@ async function initProfessorProfilePage() {
     return
   }
 
+  // Processa submissão do formulário
   form.addEventListener('submit', async event => {
     event.preventDefault()
 
+    // Constrói objeto com apenas os dados alterados
     const payload = buildProfessorPayload(initialData)
     if (Object.keys(payload).length === 0) {
-      // Usa modal para mensagem informativa
       showModal(
         'Nenhuma Alteração',
         'Nenhuma alteração foi detectada no seu perfil.',
@@ -59,6 +70,7 @@ async function initProfessorProfilePage() {
     }
 
     try {
+      // Envia alterações para API
       const response = await fetch(
         `${API_BASE_URL}/api/professor/atualizar/${professorId}`,
         {
@@ -71,10 +83,10 @@ async function initProfessorProfilePage() {
         }
       )
 
-      const data = await response.json().catch(() => ({})) // Lida com casos onde a resposta pode não ser JSON
+      const data = await response.json().catch(() => ({}))
 
+      // Trata sessão expirada
       if (response.status === 401) {
-        // Modal para sessão expirada durante a atualização
         showModal(
           'Sessão Expirada',
           'Sua sessão expirou. Faça login novamente.',
@@ -85,7 +97,7 @@ async function initProfessorProfilePage() {
       }
 
       if (!response.ok) {
-        // Tenta pegar uma mensagem de erro específica da validação do Laravel
+        // Extrai mensagem de erro (prioriza erros de validação do Laravel)
         let errorMessage = data.message || 'Erro ao salvar alterações.'
         if (data.errors) {
           const firstErrorKey = Object.keys(data.errors)[0]
@@ -94,7 +106,7 @@ async function initProfessorProfilePage() {
         throw new Error(errorMessage)
       }
 
-      // Atualiza initialData com as alterações salvas com sucesso
+      // Atualiza dados iniciais após sucesso
       const updatedSubjects =
         payload.subjects !== undefined
           ? [...payload.subjects]
@@ -102,20 +114,17 @@ async function initProfessorProfilePage() {
 
       initialData = {
         ...initialData,
-        ...payload, // Aplica apenas as mudanças enviadas
+        ...payload,
         subjects: updatedSubjects
       }
 
-      // Lida corretamente com a remoção potencial de photo_url
       if ('photo_url' in payload && !payload.photo_url) {
         initialData.photo_url = ''
       }
 
-      // Usa modal para mensagem de sucesso
       showModal('Sucesso!', 'Seu perfil foi atualizado com sucesso!', 'success')
     } catch (error) {
       console.error('Erro ao salvar perfil:', error)
-      // Usa modal para erros ao salvar
       showModal(
         'Erro ao Salvar',
         error.message || 'Não foi possível atualizar o perfil.',
@@ -125,6 +134,11 @@ async function initProfessorProfilePage() {
   })
 }
 
+
+/**
+ * Redireciona professor para página de login
+ * @param {boolean} clearStorage - Se true, limpa tokens do localStorage
+ */
 function redirectProfessorToLogin(clearStorage = false) {
   if (clearStorage) {
     localStorage.removeItem('professorToken')
@@ -133,6 +147,11 @@ function redirectProfessorToLogin(clearStorage = false) {
   window.location.href = 'login-professor.html'
 }
 
+/**
+ * Busca dados do perfil do professor da API
+ * @param {string} token - Token JWT de autenticação
+ * @returns {Promise<Object>} - Dados do professor
+ */
 async function fetchProfessorProfile(token) {
   const response = await fetch(`${API_BASE_URL}/api/professor/me`, {
     headers: {
@@ -143,9 +162,8 @@ async function fetchProfessorProfile(token) {
   const payload = await response.json().catch(() => ({}))
 
   if (response.status === 401) {
-    // Nenhum modal necessário aqui, pois initProfessorProfilePage lida com a mensagem de redirecionamento
     redirectProfessorToLogin(true)
-    throw new Error('Sessão expirada.') // Lança erro para parar a execução posterior em init
+    throw new Error('Sessão expirada.')
   }
 
   if (!response.ok || !payload?.data) {
@@ -157,25 +175,33 @@ async function fetchProfessorProfile(token) {
   return payload.data
 }
 
+/**
+ * Busca lista de matérias disponíveis da API
+ * @returns {Promise<Array>} - Array de matérias
+ */
 async function fetchSubjects() {
   const response = await fetch(`${API_BASE_URL}/api/subject/listar`)
   if (!response.ok) {
     throw new Error('Não foi possível carregar as matérias disponíveis.')
   }
-  // Assumindo que a API retorna o array diretamente ou dentro de uma chave 'data'
   const result = await response.json()
   return Array.isArray(result) ? result : result.data || []
 }
 
+/**
+ * Normaliza dados do professor para formato esperado pelo formulário
+ * @param {Object} profile - Dados do professor da API
+ * @returns {Object} - Dados normalizados
+ */
 function normalizeProfessorProfile(profile) {
-  // Garante que subjects seja sempre um array de IDs
+  // Extrai IDs de matérias
   const subjectIds = Array.isArray(profile.subjects)
     ? profile.subjects.map(subject => subject.id)
     : []
 
   return {
     name: profile.name || '',
-    email: profile.email || '', // Email geralmente é somente leitura, mas é bom ter
+    email: profile.email || '',
     contact: profile.contact || '',
     photo_url: profile.photo_url || '',
     biography: profile.biography || '',
@@ -187,9 +213,14 @@ function normalizeProfessorProfile(profile) {
   }
 }
 
+/**
+ * Popula formulário com dados do professor
+ * @param {Object} initialData - Dados iniciais do professor
+ * @param {Array} subjectsList - Lista de matérias disponíveis
+ */
 function populateProfessorForm(initialData, subjectsList) {
   document.getElementById('name').value = initialData.name
-  document.getElementById('email').value = initialData.email // Geralmente somente leitura
+  document.getElementById('email').value = initialData.email
   document.getElementById('contact').value = initialData.contact
   document.getElementById('photo_url').value = initialData.photo_url
   document.getElementById('biography').value = initialData.biography
@@ -197,8 +228,12 @@ function populateProfessorForm(initialData, subjectsList) {
     initialData.price === '' ? '' : initialData.price
 
   renderSubjects(subjectsList, initialData.subjects)
-}
 
+/**
+ * Renderiza checkboxes de matérias no formulário
+ * @param {Array} subjects - Lista de matérias disponíveis
+ * @param {Array} selectedIds - IDs das matérias atualmente selecionadas
+ */
 function renderSubjects(subjects, selectedIds) {
   const container = document.getElementById('subjects-checkbox-list')
   container.innerHTML = ''
@@ -210,19 +245,18 @@ function renderSubjects(subjects, selectedIds) {
 
   subjects.forEach(subject => {
     const wrapper = document.createElement('label')
-    wrapper.classList.add('subject-item') // Sua classe existente para estilização
-    wrapper.setAttribute('for', `subject-${subject.id}`) // Associação correta
+    wrapper.classList.add('subject-item')
+    wrapper.setAttribute('for', `subject-${subject.id}`)
 
     const checkbox = document.createElement('input')
     checkbox.type = 'checkbox'
-    checkbox.name = 'subjects[]' // Usa name para simulação/lógica de envio de formulário
+    checkbox.name = 'subjects[]'
     checkbox.value = subject.id
     checkbox.id = `subject-${subject.id}`
-    // Garante que selectedIds seja tratado como um array antes de usar includes
     checkbox.checked =
       Array.isArray(selectedIds) && selectedIds.includes(subject.id)
 
-    const text = document.createElement('span') // Usa span para o texto
+    const text = document.createElement('span')
     text.textContent = subject.name
 
     wrapper.appendChild(checkbox)
@@ -231,6 +265,11 @@ function renderSubjects(subjects, selectedIds) {
   })
 }
 
+/**
+ * Constrói objeto com apenas os dados alterados
+ * @param {Object} initialData - Dados originais do professor
+ * @returns {Object} - Objeto com apenas campos modificados
+ */
 function buildProfessorPayload(initialData) {
   const payload = {}
 
@@ -245,9 +284,8 @@ function buildProfessorPayload(initialData) {
   }
 
   const photoUrl = document.getElementById('photo_url').value.trim()
-  // Permite enviar string vazia para potencialmente limpar a URL da foto
   if (photoUrl !== initialData.photo_url) {
-    payload.photo_url = photoUrl === '' ? null : photoUrl // Envia null se estiver vazio
+    payload.photo_url = photoUrl === '' ? null : photoUrl
   }
 
   const biography = document.getElementById('biography').value.trim()
@@ -258,7 +296,6 @@ function buildProfessorPayload(initialData) {
   const priceField = document.getElementById('price').value.trim()
   if (priceField !== '') {
     const parsedPrice = Number(priceField)
-    // Garante que o preço é um número válido e realmente mudou
     if (
       !Number.isNaN(parsedPrice) &&
       parsedPrice >= 0 &&
@@ -266,17 +303,14 @@ function buildProfessorPayload(initialData) {
     ) {
       payload.price = parsedPrice
     }
-  } else if (initialData.price !== '') {
-    // Se o campo for limpo e tinha um valor, envia null ou trata como necessário
-    // Dependendo da API: pode precisar enviar um valor específico como 0 ou null
-    // payload.price = null; // Ou trate com base nos requisitos da API
   }
 
+  // Coleta matérias selecionadas
   const selectedSubjects = Array.from(
     document.querySelectorAll('input[name="subjects[]"]:checked')
   ).map(checkbox => Number(checkbox.value))
 
-  // Compara matérias com precisão
+  // Envia apenas se houver mudança
   if (!arraysEqual(selectedSubjects, initialData.subjects)) {
     payload.subjects = selectedSubjects
   }
@@ -284,15 +318,18 @@ function buildProfessorPayload(initialData) {
   return payload
 }
 
+/**
+ * Compara dois arrays de números de forma independente de ordem
+ * @param {Array} arrayA - Primeiro array
+ * @param {Array} arrayB - Segundo array
+ * @returns {boolean} - True se conteúdos são iguais
+ */
 function arraysEqual(arrayA = [], arrayB = []) {
-  // Garante que ambos sejam tratados como arrays
   const arrA = Array.isArray(arrayA) ? arrayA : []
   const arrB = Array.isArray(arrayB) ? arrayB : []
 
   if (arrA.length !== arrB.length) return false
-  const sortedA = [...arrA].sort((a, b) => a - b) // Ordena números corretamente
+  const sortedA = [...arrA].sort((a, b) => a - b)
   const sortedB = [...arrB].sort((a, b) => a - b)
   return sortedA.every((value, index) => value === sortedB[index])
 }
-
-// A função showFeedback não é mais necessária e pode ser removida

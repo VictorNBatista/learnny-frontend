@@ -1,8 +1,19 @@
+/**
+ * MÓDULO: Dashboard do Professor
+ * ================================================
+ * Gerencia a página principal do professor exibindo seus agendamentos,
+ * permitindo confirmar, rejeitar ou cancelar aulas com alunos.
+ */
+
 document.addEventListener('DOMContentLoaded', function () {
   checkProfessorAuth()
   setupLogout()
 })
 
+/**
+ * Verifica se o professor está autenticado
+ * Redireciona para login se não houver token armazenado
+ */
 function checkProfessorAuth() {
   const professorToken = localStorage.getItem('professorToken')
   if (!professorToken) {
@@ -12,6 +23,11 @@ function checkProfessorAuth() {
   verifyProfessorToken(professorToken)
 }
 
+/**
+ * Verifica validade do token com a API
+ * Obtém dados do professor e inicializa a dashboard
+ * @param {string} token - Token JWT armazenado do professor
+ */
 function verifyProfessorToken(token) {
   fetch(`${API_BASE_URL}/api/professor/me`, {
     method: 'GET',
@@ -29,12 +45,14 @@ function verifyProfessorToken(token) {
       return response.json()
     })
     .then(professor => {
+      // Personaliza mensagem de boas-vindas com nome do professor
       if (professor && professor.name) {
         const welcomeMessage = document.getElementById('welcome-message')
         if (welcomeMessage) {
           welcomeMessage.textContent = `Bem-vindo(a) de volta, ${professor.name}!`
         }
       }
+      // Carrega os agendamentos e configura filtros
       loadAppointments(token, 'all')
       setupFilters()
     })
@@ -46,6 +64,10 @@ function verifyProfessorToken(token) {
     })
 }
 
+/**
+ * Configura listeners para os botões de filtro de status
+ * Permite filtrar agendamentos por: todos, pendentes, confirmados e cancelados
+ */
 function setupFilters() {
   const filterContainer = document.querySelector('.filter-buttons')
   if (!filterContainer) return
@@ -53,11 +75,13 @@ function setupFilters() {
   filterContainer.addEventListener('click', event => {
     const targetButton = event.target.closest('.filter-btn')
     if (targetButton) {
+      // Atualiza aparência do botão ativo
       filterContainer
         .querySelectorAll('.filter-btn')
         .forEach(btn => btn.classList.remove('active'))
       targetButton.classList.add('active')
 
+      // Carrega agendamentos com novo filtro
       const filter = targetButton.dataset.filter
       const token = localStorage.getItem('professorToken')
       loadAppointments(token, filter)
@@ -65,10 +89,16 @@ function setupFilters() {
   })
 }
 
+/**
+ * Carrega agendamentos do professor da API e exibe na dashboard
+ * @param {string} token - Token JWT do professor
+ * @param {string} filter - Filtro de status ('all', 'pending', 'confirmed', 'canceled')
+ */
 async function loadAppointments(token, filter = 'all') {
   const listContainer = document.getElementById('appointments-list')
   listContainer.innerHTML = '<p>Carregando agendamentos...</p>'
 
+  // Monta URL da API com filtro de status
   let apiUrl = `${API_BASE_URL}/api/professor/appointments`
 
   if (filter !== 'all') {
@@ -85,12 +115,14 @@ async function loadAppointments(token, filter = 'all') {
     const appointments = await response.json()
     listContainer.innerHTML = ''
 
+    // Verifica se há agendamentos para o filtro selecionado
     if (appointments.length === 0) {
       listContainer.innerHTML =
         '<p>Nenhum agendamento encontrado para este filtro.</p>'
       return
     }
 
+    // Cria card para cada agendamento
     appointments.forEach(app => {
       const card = createAppointmentCard(app)
       listContainer.appendChild(card)
@@ -102,14 +134,23 @@ async function loadAppointments(token, filter = 'all') {
   }
 }
 
+/**
+ * Cria um card/cartão visual para um agendamento
+ * Exibe informações do aluno, matéria, data/hora e ações disponíveis
+ * @param {Object} app - Objeto agendamento com dados do aluno e aula
+ * @returns {HTMLElement} - Elemento article contendo o card do agendamento
+ */
 function createAppointmentCard(app) {
   const card = document.createElement('article')
   card.className = 'appointment-card'
   const { user, subject } = app
+
+  // Formata data e hora para o padrão brasileiro
   const dateTime = new Date(app.start_time)
   const date = dateTime.toLocaleDateString('pt-BR', { dateStyle: 'full' })
   const time = dateTime.toLocaleTimeString('pt-BR', { timeStyle: 'short' })
 
+  // Define ações disponíveis conforme o status do agendamento
   let actionButtons = `<p>ID do agendamento: ${app.id}</p>`
   if (app.status === 'pending') {
     actionButtons = `
@@ -120,6 +161,7 @@ function createAppointmentCard(app) {
     actionButtons = `<button class="cancel-button" data-id="${app.id}">Cancelar</button>`
   }
 
+  // Monta HTML do card
   card.innerHTML = `
         <header>
             <div class="profile">
@@ -143,6 +185,7 @@ function createAppointmentCard(app) {
         </footer>
     `
 
+  // Atribui listeners aos botões de ação
   card
     .querySelector('.confirm-button')
     ?.addEventListener('click', handleConfirmClick)
@@ -156,9 +199,16 @@ function createAppointmentCard(app) {
   return card
 }
 
+/**
+ * Gerencia ações do professor sobre agendamentos (confirmar, rejeitar, cancelar)
+ * Solicita confirmação do usuário antes de enviar requisição à API
+ * @param {string} appointmentId - ID do agendamento
+ * @param {string} action - Ação a realizar: 'confirm', 'reject' ou 'cancel'
+ */
 async function handleAppointmentAction(appointmentId, action) {
   const token = localStorage.getItem('professorToken')
 
+  // Personaliza mensagens de confirmação conforme a ação
   let title = 'Confirmar Ação'
   let message = `Tem certeza que deseja ${action} o agendamento #${appointmentId}?`
 
@@ -173,12 +223,11 @@ async function handleAppointmentAction(appointmentId, action) {
     message = `Deseja cancelar esta aula confirmada? (ID: ${appointmentId})`
   }
 
+  // Aguarda confirmação do usuário
   const didConfirm = await showConfirm(title, message)
-
-  // Se o usuário clicou em "Cancelar" no modal, a função para aqui.
   if (!didConfirm) return
 
-  // Se o usuário confirmou, o código continua...
+  // Envia ação para API
   const url = `${API_BASE_URL}/api/professor/appointments/${appointmentId}/${action}`
 
   try {
@@ -193,7 +242,7 @@ async function handleAppointmentAction(appointmentId, action) {
         `O agendamento #${appointmentId} foi atualizado com sucesso.`,
         'success'
       )
-      loadAppointments(token) // Recarrega a lista
+      loadAppointments(token) // Recarrega lista de agendamentos
     } else {
       const err = await response.json()
       showModal(
@@ -212,6 +261,9 @@ async function handleAppointmentAction(appointmentId, action) {
   }
 }
 
+/**
+ * Configura listener para botão de logout
+ */
 function setupLogout() {
   const logoutBtn = document.getElementById('logout-button')
   if (logoutBtn) {
@@ -222,6 +274,10 @@ function setupLogout() {
   }
 }
 
+/**
+ * Realiza logout do professor
+ * Remove credenciais do navegador e redireciona para página inicial
+ */
 function logout() {
   const professorToken = localStorage.getItem('professorToken')
   if (professorToken) {
@@ -229,6 +285,7 @@ function logout() {
       method: 'POST',
       headers: { Authorization: `Bearer ${professorToken}` }
     }).finally(() => {
+      // Remove credenciais independentemente da resposta da API
       localStorage.removeItem('professorToken')
       localStorage.removeItem('professorId')
       window.location.href = 'index.html'
@@ -238,12 +295,15 @@ function logout() {
   }
 }
 
+// Handlers para click nos botões de ação dos cards
 function handleConfirmClick(e) {
   handleAppointmentAction(e.target.dataset.id, 'confirm')
 }
+
 function handleRejectClick(e) {
   handleAppointmentAction(e.target.dataset.id, 'reject')
 }
+
 function handleProfessorCancelClick(e) {
   handleAppointmentAction(e.target.dataset.id, 'cancel')
 }

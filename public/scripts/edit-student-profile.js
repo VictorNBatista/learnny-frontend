@@ -1,13 +1,23 @@
+/**
+ * MÓDULO: Edição de Perfil de Aluno
+ * ================================================
+ * Gerencia a edição de informações do aluno.
+ * Permite atualizar nome, email, contato, foto e senha.
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
   initStudentProfilePage()
 })
 
+/**
+ * Inicializa página de edição de perfil do aluno
+ * Valida autenticação, carrega dados e configura formulário
+ */
 async function initStudentProfilePage() {
   const token = localStorage.getItem('userToken')
   const userId = localStorage.getItem('userId')
 
   if (!token || !userId) {
-    // Usa modal para mensagem de redirecionamento
     showModal(
       'Sessão Inválida',
       'Você precisa estar logado para acessar esta página. Redirecionando...',
@@ -18,17 +28,16 @@ async function initStudentProfilePage() {
   }
 
   const form = document.getElementById('student-profile-form')
-  // Não precisamos mais do feedbackEl
 
   let initialData = null
 
   try {
+    // Carrega dados do perfil do aluno
     const profile = await fetchStudentProfile(token, userId)
     initialData = normalizeStudentProfile(profile)
     populateStudentForm(initialData)
   } catch (error) {
     console.error('Erro ao carregar perfil do aluno:', error)
-    // Usa modal para erros de carregamento
     showModal(
       'Erro ao Carregar',
       error.message || 'Não foi possível carregar seus dados.',
@@ -37,19 +46,19 @@ async function initStudentProfilePage() {
     return
   }
 
+  // Processa submissão do formulário
   form.addEventListener('submit', async event => {
     event.preventDefault()
 
+    // Constrói payload com dados alterados e valida
     const { payload, validationError } = buildStudentPayload(initialData)
 
     if (validationError) {
-      // Usa modal para erros de validação do lado do cliente (ex: senha não confere)
       showModal('Erro de Validação', validationError, 'error')
       return
     }
 
     if (Object.keys(payload).length === 0) {
-      // Usa modal para mensagem informativa
       showModal(
         'Nenhuma Alteração',
         'Nenhuma alteração foi detectada no seu perfil.',
@@ -59,6 +68,7 @@ async function initStudentProfilePage() {
     }
 
     try {
+      // Envia alterações para API
       const response = await fetch(
         `${API_BASE_URL}/api/user/atualizar/${userId}`,
         {
@@ -73,8 +83,8 @@ async function initStudentProfilePage() {
 
       const data = await response.json().catch(() => ({}))
 
+      // Trata sessão expirada
       if (response.status === 401) {
-        // Modal para sessão expirada durante a atualização
         showModal(
           'Sessão Expirada',
           'Sua sessão expirou. Faça login novamente.',
@@ -85,7 +95,7 @@ async function initStudentProfilePage() {
       }
 
       if (!response.ok) {
-        // Tenta pegar uma mensagem de erro específica da validação do Laravel
+        // Extrai mensagem de erro (prioriza erros de validação do Laravel)
         let errorMessage = data.message || 'Erro ao atualizar o perfil.'
         if (data.errors) {
           const firstErrorKey = Object.keys(data.errors)[0]
@@ -94,18 +104,16 @@ async function initStudentProfilePage() {
         throw new Error(errorMessage)
       }
 
-      // Atualiza initialData apenas com os campos que foram realmente enviados e salvos
+      // Atualiza dados iniciais apenas com campos persistentes
       initialData = {
         ...initialData,
-        ...filterPersistedStudentData(payload) // Exclui campos de senha
+        ...filterPersistedStudentData(payload)
       }
 
       clearStudentPasswordFields()
-      // Usa modal para mensagem de sucesso
       showModal('Sucesso!', 'Seu perfil foi atualizado com sucesso!', 'success')
     } catch (error) {
       console.error('Erro ao salvar perfil do aluno:', error)
-      // Usa modal para erros ao salvar
       showModal(
         'Erro ao Salvar',
         error.message || 'Não foi possível atualizar o perfil.',
@@ -115,6 +123,10 @@ async function initStudentProfilePage() {
   })
 }
 
+/**
+ * Redireciona aluno para página de login
+ * @param {boolean} clear - Se true, limpa tokens do localStorage
+ */
 function redirectStudentToLogin(clear = false) {
   if (clear) {
     localStorage.removeItem('userToken')
@@ -123,12 +135,16 @@ function redirectStudentToLogin(clear = false) {
   window.location.href = 'login-student.html'
 }
 
+/**
+ * Busca dados do perfil do aluno da API
+ * @param {string} token - Token JWT de autenticação
+ * @param {string} userId - ID do aluno
+ * @returns {Promise<Object>} - Dados do aluno
+ */
 async function fetchStudentProfile(token, userId) {
-  // Garanta que você tem o endpoint correto da API para buscar o perfil de um usuário específico
   const response = await fetch(
     `${API_BASE_URL}/api/user/visualizar/${userId}`,
     {
-      // Ou talvez apenas /api/user ?
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -138,12 +154,11 @@ async function fetchStudentProfile(token, userId) {
   const payload = await response.json().catch(() => ({}))
 
   if (response.status === 401) {
-    // Nenhum modal necessário aqui
     redirectStudentToLogin(true)
     throw new Error('Sessão expirada.')
   }
 
-  // Ajuste com base na estrutura de resposta da sua API (ex: payload.data ou payload diretamente)
+  // Extrai dados do aluno da resposta
   const userProfile = payload.user || payload.data || payload
 
   if (!response.ok || !userProfile) {
@@ -155,28 +170,40 @@ async function fetchStudentProfile(token, userId) {
   return userProfile
 }
 
+/**
+ * Normaliza dados do aluno para formato esperado pelo formulário
+ * @param {Object} profile - Dados do aluno da API
+ * @returns {Object} - Dados normalizados
+ */
 function normalizeStudentProfile(profile) {
   return {
     name: profile.name || '',
-    email: (profile.email || '').toLowerCase(), // Normaliza o caso do email
+    email: (profile.email || '').toLowerCase(),
     contact: profile.contact || '',
     photo_url: profile.photo_url || ''
-    // Não armazena informações de senha buscadas da API
   }
 }
 
+/**
+ * Popula formulário com dados do aluno
+ * @param {Object} initialData - Dados iniciais do aluno
+ */
 function populateStudentForm(initialData) {
   document.getElementById('name').value = initialData.name
   document.getElementById('email').value = initialData.email
   document.getElementById('contact').value = initialData.contact
   document.getElementById('photo_url').value = initialData.photo_url
-  // Limpa campos de senha ao carregar
   clearStudentPasswordFields()
 }
 
+/**
+ * Constrói payload com dados alterados, validando senha se fornecida
+ * @param {Object} initialData - Dados originais do aluno
+ * @returns {Object} - Objeto {payload, validationError}
+ */
 function buildStudentPayload(initialData) {
   const payload = {}
-  let validationError = null // Usa null inicialmente
+  let validationError = null
 
   const name = document.getElementById('name').value.trim()
   const email = document.getElementById('email').value.trim().toLowerCase()
@@ -187,7 +214,7 @@ function buildStudentPayload(initialData) {
     'password_confirmation'
   ).value
 
-  // Adiciona campos ao payload apenas se eles mudaram
+  // Adiciona ao payload apenas se houver mudança
   if (name && name !== initialData.name) {
     payload.name = name
   }
@@ -201,14 +228,14 @@ function buildStudentPayload(initialData) {
     payload.photo_url = photo_url === '' ? null : photo_url
   }
 
-  // Lida com a lógica de atualização de senha
+  // Processa alteração de senha se fornecida
   if (password || passwordConfirmation) {
     if (!password || !passwordConfirmation) {
       validationError = 'Preencha e confirme a nova senha para atualizá-la.'
     } else if (password !== passwordConfirmation) {
       validationError = 'As senhas informadas não conferem.'
     } else {
-      // Adiciona a verificação de regex da senha aqui, se desejado
+      // Valida requisitos de segurança: mínimo 8 caracteres, maiúscula, minúscula, número, símbolo
       const passwordRegex =
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
       if (!passwordRegex.test(password)) {
@@ -221,18 +248,23 @@ function buildStudentPayload(initialData) {
     }
   }
 
-  return { payload, validationError } // Retorna tanto o payload quanto o erro potencial
+  return { payload, validationError }
 }
 
-// Auxiliar para excluir campos de senha ao atualizar initialData
+/**
+ * Filtra dados removendo campos de senha (não persistem no initialData)
+ * @param {Object} payload - Payload original
+ * @returns {Object} - Payload sem campos de senha
+ */
 function filterPersistedStudentData(payload) {
   const { password, password_confirmation, ...rest } = payload
   return rest
 }
 
+/**
+ * Limpa campos de senha do formulário após salvar
+ */
 function clearStudentPasswordFields() {
   document.getElementById('password').value = ''
   document.getElementById('password_confirmation').value = ''
 }
-
-// A função showFeedback não é mais necessária e pode ser removida

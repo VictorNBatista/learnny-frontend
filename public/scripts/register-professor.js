@@ -1,3 +1,10 @@
+/**
+ * MÓDULO: Registro de Professor
+ * ================================================
+ * Gerencia o formulário de cadastro de professores.
+ * Carrega lista de matérias, valida dados e envia registro para API.
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
   carregarMaterias()
 
@@ -6,27 +13,32 @@ document.addEventListener('DOMContentLoaded', () => {
     .addEventListener('submit', cadastrarProfessor)
 })
 
-// Busca as matérias disponíveis na API e popula a lista de checkboxes.
+/**
+ * Carrega as matérias disponíveis da API e popula checkboxes no formulário
+ * Exibe feedback visual durante carregamento e em caso de erro
+ */
 async function carregarMaterias() {
   const container = document.getElementById('subjects-checkbox-list')
-  container.innerHTML = '<p>Carregando matérias...</p>' // Feedback inicial
+  container.innerHTML = '<p>Carregando matérias...</p>'
 
   try {
+    // Busca lista de matérias da API
     const resposta = await fetch(`${API_BASE_URL}/api/subject/listar`)
     if (!resposta.ok) throw new Error('Erro ao carregar matérias')
 
     const materias = await resposta.json()
     console.log('Matérias carregadas:', materias)
-    container.innerHTML = '' // Limpa o "Carregando..."
+    container.innerHTML = ''
 
     if (!Array.isArray(materias) || materias.length === 0) {
       container.innerHTML = '<p>Nenhuma matéria encontrada.</p>'
       return
     }
 
+    // Cria checkbox para cada matéria
     materias.forEach(subject => {
       const wrapper = document.createElement('div')
-      wrapper.classList.add('subject-item') // Mantém sua classe original
+      wrapper.classList.add('subject-item')
 
       const checkbox = document.createElement('input')
       checkbox.type = 'checkbox'
@@ -44,8 +56,8 @@ async function carregarMaterias() {
     })
   } catch (erro) {
     console.error('Erro ao carregar matérias:', erro)
-    container.innerHTML = '<p>Erro ao carregar matérias.</p>' // Feedback de erro
-    // Usa o modal para notificar o erro ao carregar matérias
+    container.innerHTML = '<p>Erro ao carregar matérias.</p>'
+    
     showModal(
       'Erro',
       'Não foi possível carregar a lista de matérias disponíveis.',
@@ -54,9 +66,15 @@ async function carregarMaterias() {
   }
 }
 
+/**
+ * Processa o cadastro de novo professor
+ * Valida dados, coleta matérias selecionadas e envia para API
+ * @param {Event} event - Evento de submit do formulário
+ */
 async function cadastrarProfessor(event) {
-  event.preventDefault() // Impede o envio padrão do formulário
+  event.preventDefault()
 
+  // Coleta dados do formulário
   const name = document.getElementById('name').value
   const username = document.getElementById('username').value
   const email = document.getElementById('email').value
@@ -69,11 +87,12 @@ async function cadastrarProfessor(event) {
   const biography = document.getElementById('bio').value
   const price = parseFloat(document.getElementById('cost').value)
 
-  // Coleta das matérias selecionadas
+  // Coleta IDs das matérias selecionadas via checkboxes
   const subjects = Array.from(
     document.querySelectorAll('input[name="subjects[]"]:checked')
   ).map(cb => parseInt(cb.value))
 
+  // Valida se as senhas coincidem
   if (password !== password_confirmation) {
     showModal(
       'Erro de Validação',
@@ -82,12 +101,14 @@ async function cadastrarProfessor(event) {
     )
     return
   }
+
+  // Valida se pelo menos uma matéria foi selecionada
   if (subjects.length === 0) {
     showModal('Erro de Validação', 'Selecione pelo menos uma matéria.', 'error')
     return
   }
 
-  // Monta o objeto de dados para envio
+  // Monta objeto com dados do professor
   const dados = {
     name,
     username,
@@ -104,7 +125,7 @@ async function cadastrarProfessor(event) {
   console.log('Dados a serem enviados:', dados)
 
   try {
-    // Envio da requisição para a API
+    // Envia dados para API de cadastro de professores
     const resposta = await fetch(`${API_BASE_URL}/api/professor/cadastrar`, {
       method: 'POST',
       headers: {
@@ -114,8 +135,8 @@ async function cadastrarProfessor(event) {
       body: JSON.stringify(dados)
     })
 
-    // Processa a resposta
-    const respostaJson = await resposta.json().catch(() => ({})) // Tenta parsear JSON, retorna {} se falhar
+    // Tenta processar resposta JSON, trata erro se resposta não for JSON válido
+    const respostaJson = await resposta.json().catch(() => ({}))
 
     if (resposta.ok) {
       showModal(
@@ -123,15 +144,15 @@ async function cadastrarProfessor(event) {
         `Professor ${dados.name} cadastrado com sucesso! Você será redirecionado para a página de login.`,
         'success'
       )
-      document.getElementById('create-class').reset() // Limpa o formulário
+      document.getElementById('create-class').reset()
 
-      // Redireciona para o login do professor após um tempo
+      // Aguarda 3 segundos para o usuário ler mensagem de sucesso antes de redirecionar
       setTimeout(() => {
         window.location.href = 'login-professor.html'
-      }, 3000) // Espera 3 segundos
+      }, 3000)
     } else {
+      // Extrai mensagem de erro: tenta erros de validação do Laravel primeiro
       let errorMessage = respostaJson.message || 'Falha ao cadastrar professor'
-      // Tenta extrair erros de validação específicos do Laravel
       if (respostaJson.errors) {
         const firstErrorKey = Object.keys(respostaJson.errors)[0]
         errorMessage = respostaJson.errors[firstErrorKey][0]
@@ -140,7 +161,7 @@ async function cadastrarProfessor(event) {
       showModal('Erro no Cadastro', errorMessage, 'error')
     }
   } catch (erro) {
-    // --- ERRO DE CONEXÃO/REDE ---
+    // Trata erro de conexão com servidor
     console.error('Erro na requisição:', erro)
     showModal(
       'Erro de Conexão',
@@ -148,4 +169,5 @@ async function cadastrarProfessor(event) {
       'error'
     )
   }
+}
 }

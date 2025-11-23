@@ -1,9 +1,17 @@
+/**
+ * MÓDULO: Agendamento de Aulas
+ * ================================================
+ * Gerencia o fluxo de agendamento de aulas com professor.
+ * Carrega detalhes do professor, horários disponíveis e processa agendamento.
+ */
+
 document.addEventListener('DOMContentLoaded', async () => {
   const professorInfoContainer = document.getElementById('professor-info')
   const subjectSelect = document.getElementById('subject-select')
   const slotsContainer = document.getElementById('slots-container')
   const token = localStorage.getItem('userToken')
 
+  // Extrai ID do professor da URL via query parameter
   const params = new URLSearchParams(window.location.search)
   const professorId = params.get('professorId')
 
@@ -19,10 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     return
   }
 
-  // buscar e exibir os detalhes do professor
+  /**
+   * Busca dados do professor e popula seletor de matérias
+   * Carrega imagem, nome e lista de matérias disponíveis
+   */
   async function loadProfessorDetails() {
     try {
-      // Garanta que este endpoint retorna os detalhes de UM professor e suas matérias
+      // Busca detalhes do professor incluindo suas matérias
       const response = await fetch(
         `${API_BASE_URL}/api/user/professors/${professorId}`,
         {
@@ -37,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           'Não foi possível carregar os detalhes do professor.',
           'error'
         )
-        return // Interrompe a execução se não conseguir carregar o professor
+        return
       }
 
       const responseData = await response.json()
@@ -51,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       console.log('Detalhes do professor:', professor)
 
+      // Exibe foto e nome do professor
       professorInfoContainer.innerHTML = `
               <img src="${
                 professor.photo_url || 'public/images/default-avatar.svg'
@@ -58,9 +70,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               <strong>${professor.name}</strong>
           `
 
-      // Limpa opções anteriores e preenche o select com as matérias
+      // Popula select com matérias do professor
       subjectSelect.innerHTML =
-        '<option value="" disabled selected>Selecione uma matéria</option>' // Reset com placeholder
+        '<option value="" disabled selected>Selecione uma matéria</option>'
       if (professor.subjects && professor.subjects.length > 0) {
         professor.subjects.forEach(subject => {
           const option = document.createElement('option')
@@ -69,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           subjectSelect.appendChild(option)
         })
       } else {
-        // Informa se o professor não tem matérias cadastradas
+        // Informa se professor não tem matérias cadastradas
         const option = document.createElement('option')
         option.value = ''
         option.textContent = 'Nenhuma matéria disponível'
@@ -86,11 +98,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Função para buscar e exibir os horários livres
+  /**
+   * Busca e exibe horários disponíveis do professor
+   * Formata datas/horas para locale pt-BR
+   */
   async function loadAvailableSlots() {
     slotsContainer.innerHTML = '<p>Carregando horários...</p>'
     try {
-      // Garanta que este endpoint retorna o array de strings ISO
+      // Busca array de slots ISO 8601 do professor
       const response = await fetch(
         `${API_BASE_URL}/api/professor/${professorId}/availabilities`
       )
@@ -106,18 +121,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         return
       }
 
+      // Cria botão para cada slot disponível
       slots.forEach(slot => {
         const date = new Date(slot)
-        // Validação simples da data
+
+        // Valida se data é válida
         if (isNaN(date.getTime())) {
           console.warn('Slot inválido recebido:', slot)
-          return // Pula slots inválidos
+          return
         }
+
+        // Formata data no padrão brasileiro
         const formattedDate = date.toLocaleDateString('pt-BR', {
           weekday: 'long',
           day: '2-digit',
           month: '2-digit'
         })
+
+        // Formata hora no padrão brasileiro
         const formattedTime = date.toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit'
@@ -141,7 +162,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Função para lidar com o clique em um horário
+  /**
+   * Processa clique em um horário disponível
+   * Valida matéria selecionada e pede confirmação do usuário
+   * @param {Event} event - Evento do clique no botão de slot
+   */
   async function handleSlotClick(event) {
     const selectedSubjectId = subjectSelect.value
     if (!selectedSubjectId) {
@@ -154,6 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       subjectSelect.options[subjectSelect.selectedIndex].text
     const selectedTimeText = event.target.textContent
 
+    // Solicita confirmação do usuário
     const didConfirm = await showConfirm(
       'Confirmar Agendamento',
       `Deseja realmente agendar uma aula de ${selectedSubjectText} para ${selectedTimeText}?`
@@ -164,9 +190,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Função para fazer a requisição de agendamento
+  /**
+   * Envia requisição de agendamento para API
+   * Cria novo agendamento e redireciona ao dashboard em caso de sucesso
+   * @param {string} startTime - Horário ISO 8601 do agendamento
+   * @param {number} subjectId - ID da matéria selecionada
+   */
   async function bookAppointment(startTime, subjectId) {
     try {
+      // Envia dados de agendamento para API
       const response = await fetch(`${API_BASE_URL}/api/appointments`, {
         method: 'POST',
         headers: {
@@ -177,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: JSON.stringify({
           professor_id: professorId,
           subject_id: subjectId,
-          start_time: startTime // Envia a string ISO 8601 completa
+          start_time: startTime
         })
       })
 
@@ -191,11 +223,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.location.href = 'dashboard-student.html'
         }, 3000)
       } else {
-        const errorData = await response
-          .json()
-          .catch(() => ({
-            message: 'Erro desconhecido ao processar a resposta.'
-          }))
+        const errorData = await response.json().catch(() => ({
+          message: 'Erro desconhecido ao processar a resposta.'
+        }))
         showModal(
           'Erro ao Agendar',
           errorData.message ||
@@ -213,10 +243,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Carregar tudo ao iniciar a página
-  // Chama em sequência para garantir que o professor carregue antes dos slots
+  // Carrega dados em sequência ao iniciar
+  // Primeiro carrega professor, depois horários só se professor carregou com sucesso
   await loadProfessorDetails()
-  // Só carrega os slots se o professor foi carregado com sucesso (evita erros se loadProfessorDetails falhar)
   if (document.getElementById('professor-info').innerHTML !== '') {
     await loadAvailableSlots()
   }
