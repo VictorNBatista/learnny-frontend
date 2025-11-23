@@ -9,7 +9,7 @@ function checkAdminAuth() {
 
   if (!adminToken) {
     // Redireciona para login se não houver token
-    window.location.href = 'admin-login.html'
+    window.location.href = 'login-admin.html'
     return
   }
 
@@ -30,14 +30,14 @@ function verifyAdminToken(token) {
         // Token inválido ou expirado
         localStorage.removeItem('adminToken')
         localStorage.removeItem('adminId')
-        window.location.href = 'admin-login.html'
+        window.location.href = 'login-admin.html'
       }
     })
     .catch(error => {
       console.error('Erro ao verificar token:', error)
       localStorage.removeItem('adminToken')
       localStorage.removeItem('adminId')
-      window.location.href = 'admin-login.html'
+      window.location.href = 'login-admin.html'
     })
 }
 
@@ -66,10 +66,10 @@ function logout() {
       // Remove token e redireciona mesmo que dê erro
       localStorage.removeItem('adminToken')
       localStorage.removeItem('adminId')
-      window.location.href = 'admin-login.html'
+      window.location.href = 'login-admin.html'
     })
   } else {
-    window.location.href = 'admin-login.html'
+    window.location.href = 'login-admin.html'
   }
 }
 

@@ -16,7 +16,7 @@ async function initAvailabilityPage() {
   const token = localStorage.getItem('professorToken')
   if (!token) {
     showModal('Erro', 'Você precisa estar logado como professor.', 'error')
-    setTimeout(() => (window.location.href = 'professor-login.html'), 2000)
+    setTimeout(() => (window.location.href = 'login-professor.html'), 2000)
     return
   }
 
@@ -76,7 +76,7 @@ async function fetchAvailability(token) {
     console.error('Erro em fetchAvailability:', error)
     // Se der 401, redireciona
     if (error.message.includes('Sessão expirada')) {
-      setTimeout(() => (window.location.href = 'professor-login.html'), 2000)
+      setTimeout(() => (window.location.href = 'login-professor.html'), 2000)
     }
     throw error // Propaga o erro para ser pego no init
   }

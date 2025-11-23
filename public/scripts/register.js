@@ -69,7 +69,7 @@ async function cadastrarUsuario(event) {
       )
       document.getElementById('registerForm').reset()
       setTimeout(() => {
-        window.location.href = 'login.html'
+        window.location.href = 'login-student.html'
       }, 5000)
     } else {
       // --- ERRO DA API (Ex: Validação) ---

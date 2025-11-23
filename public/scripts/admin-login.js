@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
           // Espera 2 segundos para o usuário ler a mensagem e redireciona
           setTimeout(() => {
-            window.location.href = 'admin.html'
+            window.location.href = 'dashboard-admin.html'
           }, 2000)
         } else {
           showModal(

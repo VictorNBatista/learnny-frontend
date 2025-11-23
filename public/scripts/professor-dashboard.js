@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
 function checkProfessorAuth() {
   const professorToken = localStorage.getItem('professorToken')
   if (!professorToken) {
-    window.location.href = 'professor-login.html'
+    window.location.href = 'login-professor.html'
     return
   }
   verifyProfessorToken(professorToken)
@@ -23,7 +23,7 @@ function verifyProfessorToken(token) {
     .then(response => {
       if (!response.ok) {
         localStorage.removeItem('professorToken')
-        window.location.href = 'professor-login.html'
+        window.location.href = 'login-professor.html'
         throw new Error('Token inválido')
       }
       return response.json()
@@ -42,7 +42,7 @@ function verifyProfessorToken(token) {
       console.error('Erro de autenticação:', error)
       localStorage.removeItem('professorToken')
       localStorage.removeItem('professorId')
-      window.location.href = 'professor-login.html'
+      window.location.href = 'login-professor.html'
     })
 }
 

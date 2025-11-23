@@ -127,7 +127,7 @@ async function cadastrarProfessor(event) {
 
       // Redireciona para o login do professor após um tempo
       setTimeout(() => {
-        window.location.href = 'professor-login.html'
+        window.location.href = 'login-professor.html'
       }, 3000) // Espera 3 segundos
     } else {
       let errorMessage = respostaJson.message || 'Falha ao cadastrar professor'

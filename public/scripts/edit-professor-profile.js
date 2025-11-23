@@ -130,7 +130,7 @@ function redirectProfessorToLogin(clearStorage = false) {
     localStorage.removeItem('professorToken')
     localStorage.removeItem('professorId')
   }
-  window.location.href = 'professor-login.html'
+  window.location.href = 'login-professor.html'
 }
 
 async function fetchProfessorProfile(token) {

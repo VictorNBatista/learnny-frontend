@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
 function checkAdminAuth() {
   const adminToken = localStorage.getItem('adminToken')
   if (!adminToken) {
-    window.location.href = 'admin-login.html'
+    window.location.href = 'login-admin.html'
   }
 }
 

@@ -120,7 +120,7 @@ function redirectStudentToLogin(clear = false) {
     localStorage.removeItem('userToken')
     localStorage.removeItem('userId')
   }
-  window.location.href = 'login.html'
+  window.location.href = 'login-student.html'
 }
 
 async function fetchStudentProfile(token, userId) {
