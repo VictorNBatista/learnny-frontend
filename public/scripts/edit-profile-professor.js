@@ -228,7 +228,7 @@ function populateProfessorForm(initialData, subjectsList) {
     initialData.price === '' ? '' : initialData.price
 
   renderSubjects(subjectsList, initialData.subjects)
-
+}
 /**
  * Renderiza checkboxes de matérias no formulário
  * @param {Array} subjects - Lista de matérias disponíveis

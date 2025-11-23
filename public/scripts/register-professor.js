@@ -170,4 +170,4 @@ async function cadastrarProfessor(event) {
     )
   }
 }
-}
+
